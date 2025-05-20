@@ -1,5 +1,13 @@
-# panda-gym
+# panda-gym with torque control and joint space observations
+This is a fork for [panda-gym](https://github.com/qgallouedec/panda-gym) with options for
+torque control and joint space observations. Note that all env_ids originally in panda-gym have been changed as follows:
+- Every id needs to end with either "Ee" (original end-effector observations) or "Joints" (joint angle+velocity observations).
+- [Optional] add Torques to the end of the base env_id for torque control, similar to how you can add Joints with the original 
+panda-gym
 
+An example env_id could be "PandaReachTorques-v3-Joints". Original README below.
+
+# panda-gym
 Set of robotic environments based on PyBullet physics engine and gymnasium.
 
 [![PyPI version](https://img.shields.io/pypi/v/panda-gym.svg?logo=pypi&logoColor=FFE873)](https://pypi.org/project/panda-gym/)

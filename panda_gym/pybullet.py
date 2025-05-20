@@ -331,13 +331,18 @@ class PyBullet:
         self.physics_client.resetJointState(bodyUniqueId=self._bodies_idx[body], jointIndex=joint, targetValue=angle)
 
     def control_joints(self, body: str, joints: np.ndarray, target_angles: np.ndarray, forces: np.ndarray) -> None:
-        """Control the joints motor.
+        """
+        Control the joints motor. TsmR: Note that the `forces` argument was described to be the forces to apply.
+        However, (c.f. p26 https://pybullet.org/pybullet_cg/index.php?title=PyBullet_BulletWorld
+        #setJointMotorControlArray):
+            in PD_CONTROL, POSITION_CONTROL and VELOCITY_CONTROL this is the maximum motor force used to reach the
+            target value. In TORQUE_CONTROL this is the force/torque to be applied each simulation step.
 
         Args:
             body (str): Body unique name.
             joints (np.ndarray): List of joint indices, as a list of ints.
             target_angles (np.ndarray): List of target angles, as a list of floats.
-            forces (np.ndarray): Forces to apply, as a list of floats.
+            forces (np.ndarray): see above
         """
         self.physics_client.setJointMotorControlArray(
             self._bodies_idx[body],
@@ -346,6 +351,41 @@ class PyBullet:
             targetPositions=target_angles,
             forces=forces,
         )
+
+    def control_joints_torque(self, body: str, joints: np.ndarray, forces: np.ndarray) -> None:
+        """
+        Control the joints motor. TsmR: Note that the `forces` argument was described to be the forces to apply.
+        However, (c.f. p26 https://pybullet.org/pybullet_cg/index.php?title=PyBullet_BulletWorld
+        #setJointMotorControlArray):
+            in PD_CONTROL, POSITION_CONTROL and VELOCITY_CONTROL this is the maximum motor force used to reach the
+            target value. In TORQUE_CONTROL this is the force/torque to be applied each simulation step.
+
+        Args:
+            body (str): Body unique name.
+            joints (np.ndarray): List of joint indices, as a list of ints.
+            forces (np.ndarray): see above
+        """
+        # revolute joints are motorized using a velocity motor, so we need to disable velocity control first
+        # cf https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/edit#heading=h.jxof6bt5vhut
+        self.physics_client.setJointMotorControlArray(
+            self._bodies_idx[body],
+            jointIndices=joints,
+            controlMode=self.physics_client.VELOCITY_CONTROL,
+            forces=np.zeros_like(forces),
+        )
+        self.physics_client.setJointMotorControlArray(
+            self._bodies_idx[body],
+            jointIndices=joints,
+            controlMode=self.physics_client.TORQUE_CONTROL,
+            forces=forces,
+        )
+        for i, force in enumerate(forces):
+            self.physics_client.setJointMotorControl2(
+                bodyIndex=self._bodies_idx[body],
+                jointIndex=i,
+                controlMode=p.TORQUE_CONTROL,
+                force=force
+            )
 
     def inverse_kinematics(self, body: str, link: int, position: np.ndarray, orientation: np.ndarray) -> np.ndarray:
         """Compute the inverse kinematics and return the new joint state.

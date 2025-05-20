@@ -6,6 +6,39 @@ from gymnasium import spaces
 from panda_gym.envs.core import PyBulletRobot
 from panda_gym.pybullet import PyBullet
 
+def get_torque_limits() -> np.ndarray:
+    """
+    Get the torque limits of the robot. Retrieved from:
+    https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/gym/pybullet_data/franka_panda/panda.urdf
+
+    Returns:
+        np.ndarray: Torque limits of the robot.
+    """
+    return np.array([87.0, 87.0, 87.0, 87.0, 12.0, 12.0, 12.0, 20.0, 20.0])
+
+def panda_action_space(control_type, block_gripper=False) -> spaces.Box:
+    """
+
+    Args:
+        control_type: Type of control to use. Can be "ee", "joints" or "torques".
+        block_gripper: Whether to block the gripper or not. Defaults to False.
+    Returns:
+        spaces.Box: Action space of the robot.
+    """
+    n_action = 3 if control_type == "ee" else 7  # control (x, y z) if "ee", else, control the 7 joints
+    n_action += 0 if block_gripper else 1
+    if control_type == "ee":
+        return spaces.Box(-1.0, 1.0, shape=(n_action,), dtype=np.float32)
+    elif control_type == "joints":
+        return spaces.Box(-1.0, 1.0, shape=(n_action, ), dtype=np.float32)
+    elif control_type == "torques":
+        torque_limits = get_torque_limits()
+        if block_gripper:
+            torque_limits[-2:] = 0
+        return spaces.Box(-torque_limits, torque_limits, shape=(9,), dtype=np.float32)
+    else:
+        raise ValueError(f"Unknown control type: {control_type}")
+
 
 class Panda(PyBulletRobot):
     """Panda robot in PyBullet.
@@ -14,8 +47,8 @@ class Panda(PyBulletRobot):
         sim (PyBullet): Simulation instance.
         block_gripper (bool, optional): Whether the gripper is blocked. Defaults to False.
         base_position (np.ndarray, optional): Position of the base base of the robot, as (x, y, z). Defaults to (0, 0, 0).
-        control_type (str, optional): "ee" to control end-effector displacement or "joints" to control joint angles.
-            Defaults to "ee".
+        control_type (str, optional): "ee" to control end-effector displacement or "joints" to control joint angles,
+            or "torques" to control joint torques. Defaults to "ee".
     """
 
     def __init__(
@@ -24,13 +57,14 @@ class Panda(PyBulletRobot):
         block_gripper: bool = False,
         base_position: Optional[np.ndarray] = None,
         control_type: str = "ee",
+        obs_type: str = "ee",
+
     ) -> None:
         base_position = base_position if base_position is not None else np.zeros(3)
         self.block_gripper = block_gripper
         self.control_type = control_type
-        n_action = 3 if self.control_type == "ee" else 7  # control (x, y z) if "ee", else, control the 7 joints
-        n_action += 0 if self.block_gripper else 1
-        action_space = spaces.Box(-1.0, 1.0, shape=(n_action,), dtype=np.float32)
+        self.obs_type = obs_type
+        action_space = panda_action_space(control_type, block_gripper)
         super().__init__(
             sim,
             body_name="panda",
@@ -38,7 +72,7 @@ class Panda(PyBulletRobot):
             base_position=base_position,
             action_space=action_space,
             joint_indices=np.array([0, 1, 2, 3, 4, 5, 6, 9, 10]),
-            joint_forces=np.array([87.0, 87.0, 87.0, 87.0, 12.0, 120.0, 120.0, 170.0, 170.0]),
+            joint_forces=get_torque_limits(),
         )
 
         self.fingers_indices = np.array([9, 10])
@@ -52,12 +86,18 @@ class Panda(PyBulletRobot):
     def set_action(self, action: np.ndarray) -> None:
         action = action.copy()  # ensure action don't change
         action = np.clip(action, self.action_space.low, self.action_space.high)
-        if self.control_type == "ee":
+
+        if self.control_type == "torques":
+            self.control_joints_torques(action)
+            return
+        elif self.control_type == "ee":
             ee_displacement = action[:3]
             target_arm_angles = self.ee_displacement_to_target_arm_angles(ee_displacement)
-        else:
+        elif self.control_type == "joints":
             arm_joint_ctrl = action[:7]
             target_arm_angles = self.arm_joint_ctrl_to_target_arm_angles(arm_joint_ctrl)
+        else:
+            raise ValueError(f"Unknown control type: {self.control_type}")
 
         if self.block_gripper:
             target_fingers_width = 0
@@ -107,6 +147,14 @@ class Panda(PyBulletRobot):
         return target_arm_angles
 
     def get_obs(self) -> np.ndarray:
+        if self.obs_type == "ee":
+            return self.get_ee_obs()
+        elif self.obs_type == "joints":
+            return self.get_joint_obs()
+        else:
+            raise ValueError(f"Unknown observation type: {self.obs_type}")
+
+    def get_ee_obs(self):
         # end-effector position and velocity
         ee_position = np.array(self.get_ee_position())
         ee_velocity = np.array(self.get_ee_velocity())
@@ -116,6 +164,17 @@ class Panda(PyBulletRobot):
             observation = np.concatenate((ee_position, ee_velocity, [fingers_width]))
         else:
             observation = np.concatenate((ee_position, ee_velocity))
+        return observation
+
+    def get_joint_obs(self):
+        joint_angles = np.array([self.get_joint_angle(joint=i) for i in range(7)])
+        joint_velocities = np.array([self.get_joint_velocity(joint=i) for i in range(7)])
+        # fingers opening
+        if not self.block_gripper:
+            fingers_width = self.get_fingers_width()
+            observation = np.concatenate((joint_angles, joint_velocities, [fingers_width]))
+        else:
+            observation = np.concatenate((joint_angles, joint_velocities))
         return observation
 
     def reset(self) -> None:

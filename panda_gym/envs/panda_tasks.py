@@ -39,6 +39,7 @@ class PandaFlipEnv(RobotTaskEnv):
         render_mode: str = "rgb_array",
         reward_type: str = "sparse",
         control_type: str = "ee",
+        obs_type: str = "ee",
         renderer: str = "Tiny",
         render_width: int = 720,
         render_height: int = 480,
@@ -49,7 +50,7 @@ class PandaFlipEnv(RobotTaskEnv):
         render_roll: float = 0,
     ) -> None:
         sim = PyBullet(render_mode=render_mode, renderer=renderer)
-        robot = Panda(sim, block_gripper=False, base_position=np.array([-0.6, 0.0, 0.0]), control_type=control_type)
+        robot = Panda(sim, block_gripper=False, base_position=np.array([-0.6, 0.0, 0.0]), control_type=control_type, obs_type=obs_type)
         task = Flip(sim, reward_type=reward_type)
         super().__init__(
             robot,
@@ -89,6 +90,8 @@ class PandaPickAndPlaceEnv(RobotTaskEnv):
         render_mode: str = "rgb_array",
         reward_type: str = "sparse",
         control_type: str = "ee",
+        obs_type: str = "ee",
+            
         renderer: str = "Tiny",
         render_width: int = 720,
         render_height: int = 480,
@@ -99,7 +102,7 @@ class PandaPickAndPlaceEnv(RobotTaskEnv):
         render_roll: float = 0,
     ) -> None:
         sim = PyBullet(render_mode=render_mode, renderer=renderer)
-        robot = Panda(sim, block_gripper=False, base_position=np.array([-0.6, 0.0, 0.0]), control_type=control_type)
+        robot = Panda(sim, block_gripper=False, base_position=np.array([-0.6, 0.0, 0.0]), control_type=control_type, obs_type=obs_type)
         task = PickAndPlace(sim, reward_type=reward_type)
         super().__init__(
             robot,
@@ -139,6 +142,7 @@ class PandaPushEnv(RobotTaskEnv):
         render_mode: str = "rgb_array",
         reward_type: str = "sparse",
         control_type: str = "ee",
+        obs_type: str = "ee",
         renderer: str = "Tiny",
         render_width: int = 720,
         render_height: int = 480,
@@ -149,7 +153,7 @@ class PandaPushEnv(RobotTaskEnv):
         render_roll: float = 0,
     ) -> None:
         sim = PyBullet(render_mode=render_mode, renderer=renderer)
-        robot = Panda(sim, block_gripper=True, base_position=np.array([-0.6, 0.0, 0.0]), control_type=control_type)
+        robot = Panda(sim, block_gripper=True, base_position=np.array([-0.6, 0.0, 0.0]), control_type=control_type, obs_type=obs_type)
         task = Push(sim, reward_type=reward_type)
         super().__init__(
             robot,
@@ -189,6 +193,7 @@ class PandaReachEnv(RobotTaskEnv):
         render_mode: str = "rgb_array",
         reward_type: str = "sparse",
         control_type: str = "ee",
+        obs_type: str = "ee",
         renderer: str = "Tiny",
         render_width: int = 720,
         render_height: int = 480,
@@ -199,7 +204,7 @@ class PandaReachEnv(RobotTaskEnv):
         render_roll: float = 0,
     ) -> None:
         sim = PyBullet(render_mode=render_mode, renderer=renderer)
-        robot = Panda(sim, block_gripper=True, base_position=np.array([-0.6, 0.0, 0.0]), control_type=control_type)
+        robot = Panda(sim, block_gripper=True, base_position=np.array([-0.6, 0.0, 0.0]), control_type=control_type, obs_type=obs_type)
         task = Reach(sim, reward_type=reward_type, get_ee_position=robot.get_ee_position)
         super().__init__(
             robot,
@@ -239,6 +244,7 @@ class PandaSlideEnv(RobotTaskEnv):
         render_mode: str = "rgb_array",
         reward_type: str = "sparse",
         control_type: str = "ee",
+        obs_type: str = "ee",
         renderer: str = "Tiny",
         render_width: int = 720,
         render_height: int = 480,
@@ -249,7 +255,7 @@ class PandaSlideEnv(RobotTaskEnv):
         render_roll: float = 0,
     ) -> None:
         sim = PyBullet(render_mode=render_mode, renderer=renderer)
-        robot = Panda(sim, block_gripper=True, base_position=np.array([-0.6, 0.0, 0.0]), control_type=control_type)
+        robot = Panda(sim, block_gripper=True, base_position=np.array([-0.6, 0.0, 0.0]), control_type=control_type, obs_type=obs_type)
         task = Slide(sim, reward_type=reward_type)
         super().__init__(
             robot,
@@ -289,6 +295,7 @@ class PandaStackEnv(RobotTaskEnv):
         render_mode: str = "rgb_array",
         reward_type: str = "sparse",
         control_type: str = "ee",
+        obs_type: str = "ee",
         renderer: str = "Tiny",
         render_width: int = 720,
         render_height: int = 480,
@@ -299,7 +306,7 @@ class PandaStackEnv(RobotTaskEnv):
         render_roll: float = 0,
     ) -> None:
         sim = PyBullet(render_mode=render_mode, renderer=renderer)
-        robot = Panda(sim, block_gripper=False, base_position=np.array([-0.6, 0.0, 0.0]), control_type=control_type)
+        robot = Panda(sim, block_gripper=False, base_position=np.array([-0.6, 0.0, 0.0]), control_type=control_type, obs_type=obs_type)
         task = Stack(sim, reward_type=reward_type)
         super().__init__(
             robot,

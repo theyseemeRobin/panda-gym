@@ -36,7 +36,7 @@ class PyBulletRobot(ABC):
             self.setup()
         self.action_space = action_space
         self.joint_indices = joint_indices
-        self.joint_forces = joint_forces
+        self.max_joint_torques = joint_forces
 
     def _load_robot(self, file_name: str, base_position: np.ndarray) -> None:
         """Load the robot.
@@ -130,7 +130,19 @@ class PyBulletRobot(ABC):
             body=self.body_name,
             joints=self.joint_indices,
             target_angles=target_angles,
-            forces=self.joint_forces,
+            forces=self.max_joint_torques,
+        )
+
+    def control_joints_torques(self, forces: np.ndarray) -> None:
+        """Control the joints of the robot.
+
+        Args:
+            forces (np.ndarray): The target torques. The length of the array must equal to the number of joints.
+        """
+        self.sim.control_joints_torque(
+            body=self.body_name,
+            joints=self.joint_indices,
+            forces=forces,
         )
 
     def set_joint_angles(self, angles: np.ndarray) -> None:
